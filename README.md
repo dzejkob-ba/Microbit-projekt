@@ -1,1 +1,1 @@
-Premium praca robota maximun
+nemam slof
