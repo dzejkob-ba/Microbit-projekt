@@ -1,0 +1,48 @@
+from microbit import *
+import radio
+
+radio.on()
+radio.config(group=42)
+
+uart.init(baudrate=115200)
+
+display.show(Image.SQUARE)
+
+while True:
+
+    msg = radio.receive()
+
+    if msg:
+
+        parts = msg.split(",")
+
+        if len(parts) == 4:
+
+            node = parts[1]
+            temp = int(parts[2])
+            light = int(parts[3])
+
+            # Teplota
+            if temp < 32:
+                temp_status = "TEMP | OK"
+            else:
+                temp_status = "TEMP | WARNING"
+
+                # Svetlo
+             # Svetlo (opravené)
+            if light > 50 :
+                light_status = "LIGHT | DARK"
+            elif light < 200:
+                light_status = "LIGHT | BRIGHT"
+            else:
+                light_status = "LIGHT | OK"
+
+            uart.write(
+                node + "," +
+                str(temp) + "," +
+                str(light) + "," +
+                temp_status + "," +
+                light_status + "\n"
+            )
+
+    sleep(5)
