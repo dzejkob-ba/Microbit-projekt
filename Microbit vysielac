@@ -1,0 +1,108 @@
+from microbit import *
+import radio
+
+# =====================
+# NASTAVENIA
+# =====================
+
+NODE_ID = 1      # zmen na 2, 3, 4...
+GROUP = 42
+
+radio.config(group=GROUP)
+radio.on()
+
+# =====================
+# START
+# =====================
+
+display.scroll("N{}".format(NODE_ID))
+display.show(str(NODE_ID))
+
+last_send = running_time()
+
+# ulozene spravy aby sa netocili dokola
+seen_messages = []
+
+# =====================
+# FUNKCIE
+# =====================
+
+def show_normal():
+    display.show(str(NODE_ID))
+
+def show_ok():
+    display.show(Image.YES)
+    sleep(200)
+    show_normal()
+
+def show_error():
+    display.show(Image.NO)
+    sleep(500)
+    show_normal()
+
+def show_forward():
+    display.show(Image.ARROW_E)
+    sleep(200)
+    show_normal()
+
+# =====================
+# HLAVNY CYKLUS
+# =====================
+
+while True:
+
+    # ---------------------------------
+    # POSLANIE VLASTNYCH DAT
+    # ---------------------------------
+
+    if running_time() - last_send > 10000:
+
+        temp = temperature()
+        light = display.read_light_level()
+
+        packet = "DATA,{},{},{}".format(
+            NODE_ID,
+            temp,
+            light
+        )
+
+        radio.send(packet)
+
+        show_ok()
+
+        last_send = running_time()
+
+    # ---------------------------------
+    # PRIJEM
+    # ---------------------------------
+
+    msg = radio.receive()
+
+    if msg:
+
+        # ACK pre crash algoritmus
+        if msg == "PING":
+
+            radio.send("ACK")
+
+            display.show(Image.HEART)
+            sleep(200)
+
+            show_normal()
+
+        # DATA
+        elif msg.startswith("DATA"):
+
+            # zabranenie nekonecneho kolovania
+            if msg not in seen_messages:
+
+                seen_messages.append(msg)
+
+                if len(seen_messages) > 20:
+                    seen_messages.pop(0)
+
+                radio.send(msg)
+
+                show_forward()
+
+    sleep(50)
